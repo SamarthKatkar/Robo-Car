@@ -1,8 +1,13 @@
+#include<Servo.h>
 const int trigPin = A1;
 const int echoPin = A0; 
 int leftspeed=70;
 int rightspeed=90;
 int distance;
+Servo headServo;
+int leftdistance;
+int rightdistance;
+
 
 void setup() {
   Serial.begin(9600); 
@@ -10,81 +15,118 @@ void setup() {
   pinMode(echoPin, INPUT);
  pinMode(3,OUTPUT);
  pinMode(5,OUTPUT);
- pinMode(9,OUTPUT);
- pinMode(10,OUTPUT);
+ pinMode(6,OUTPUT);
+ pinMode(11,OUTPUT);
+ headServo.attach(12);
+ headServo.write(90);
+ delay(500);
 
 }
 
 void loop() {
   dist();
-  forward();
- 
- if(distance<=20&&distance>0)
- {
-   while(distance<30)
+  if(distance<=25&&distance>0)
+  {
+    stop();
+    delay(200);
+    if(distance<20)
+    {
+      reverse();
+      delay(1500);
+      stop();
+      delay(200);
+    }
+  lookaround();
+  if(leftdistance>=rightdistance)
    {
-     reverse();
-     dist();
-     delay(50);
+      turnleft();
+      delay(400);
+   }
+   else
+   {
+    turnright();
+    delay(400);
    }
    stop();
    delay(200);
-   turn();
-   delay(200);
-   stop();
-   delay(200);
- }
- else
- {
-  forward();
- }
+   headServo.write(90);//centre
+   delay(300);
+  }
+  else
+  {
+    forward();
+  }
+  delay(50);
 }
 
 void reverse()
 {
-  analogWrite(9,LOW);
-  analogWrite(10,leftspeed);
+  analogWrite(6,LOW);
+  analogWrite(11,leftspeed);
   analogWrite(3,LOW);
   analogWrite(5,rightspeed);
 }
 void forward()
 {
-  analogWrite(9,leftspeed);
-  analogWrite(10,LOW);
+  analogWrite(6,leftspeed);
+  analogWrite(11,LOW);
   analogWrite(3,rightspeed);
   analogWrite(5,LOW);
 }
 void stop()
 {
-  analogWrite(9,LOW);
-  analogWrite(10,LOW);
+  analogWrite(6,LOW);
+  analogWrite(11,LOW);
   analogWrite(3,LOW);
   analogWrite(5,LOW);
 }
-void turn()
+void turnleft()
 {
-   analogWrite(9,LOW);
-  analogWrite(10,leftspeed);
-  analogWrite(3,rightspeed);
-  analogWrite(5,LOW);
+  analogWrite(6, LOW);
+  analogWrite(11, leftspeed);
+  analogWrite(3, rightspeed);
+  analogWrite(5, LOW);
+}
+void turnright()
+{
+  analogWrite(6, leftspeed);
+  analogWrite(11, LOW);
+  analogWrite(3, LOW);
+  analogWrite(5, rightspeed);
 }
 void dist()
 {
-   // for clearing the pin
+   // 1. Clear the pin
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
 
-  //to send a 10 microsecond wave
+  // 2. Send a 10 microsecond "Ping"
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
 
-  //to measure how lond echo pin stays high
+  // 3. Measure how long the Echo pin stays HIGH
   long duration = pulseIn(echoPin, HIGH);
 
- // Calculating Distance
+  // 4. Calculate Distance
   distance = duration * 0.034 / 2;
 
 }
-
+void lookaround() {
+  // Look Right
+  headServo.write(15); 
+  delay(500);          //time given for motor to move physicallly
+  dist();
+  rightdistance = distance;
+  
+  // Look Left
+  headServo.write(165); 
+  delay(700);          // Extra time
+  dist();
+  leftdistance = distance;
+  
+  // Return to center
+  headServo.write(90);
+  delay(200);
+}
 
